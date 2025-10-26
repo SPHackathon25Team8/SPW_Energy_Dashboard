@@ -1,20 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  images: {
-    remotePatterns: [
+  async rewrites() {
+    return [
       {
-        protocol: 'https',
-        hostname: '**',
+        source: '/api/proxy/:path*',
+        destination: 'http://localhost:8000/:path*',
       },
-    ],
-  },
-  webpack: (config) => {
-    // Handle SVG imports
-    config.module.rules.push({
-      test: /\.svg$/,
-      use: ['@svgr/webpack'],
-    });
-    return config;
+    ];
   },
 };
 

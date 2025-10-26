@@ -2,18 +2,60 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { Zap } from 'lucide-react';
-import { availableDevices } from '../types';
+import { 
+  Zap, 
+  WashingMachine, 
+  Car, 
+  UtensilsCrossed, 
+  Refrigerator, 
+  CookingPot,
+  Tv,
+  AirVent,
+  Coffee,
+  Wind,
+  Laptop,
+  Flame,
+  Microwave,
+  Fan,
+  Lightbulb,
+  Smartphone
+} from 'lucide-react';
+import { availableDevices, DisplayMode } from '../types';
 import { SidebarTrigger } from './ui/sidebar';
 import { DeviceBreakdown } from './DeviceBreakdown';
-import { ImageWithFallback } from './figma/ImageWithFallback';
+import { useState } from 'react';
 
 interface DevicesPageProps {
   selectedDevices: string[];
   setSelectedDevices: (devices: string[]) => void;
+  displayMode: DisplayMode;
+  setDisplayMode: (mode: DisplayMode) => void;
 }
 
-export function DevicesPage({ selectedDevices, setSelectedDevices }: DevicesPageProps) {
+// Map device icon names to lucide-react components
+const iconMap: Record<string, any> = {
+  'washing-machine': WashingMachine,
+  'car': Car,
+  'dishwasher': UtensilsCrossed,
+  'refrigerator': Refrigerator,
+  'oven': CookingPot,
+  'tv': Tv,
+  'air-vent': AirVent,
+  'coffee': Coffee,
+  'dryer': Wind,
+  'laptop': Laptop,
+  'heater': Flame,
+  'microwave': Microwave,
+  'wind': Wind,
+  'fan': Fan,
+  'lightbulb': Lightbulb,
+  'smartphone': Smartphone,
+};
+
+
+
+
+export function DevicesPage({ selectedDevices, setSelectedDevices, displayMode, setDisplayMode }: DevicesPageProps) {
   const toggleDevice = (deviceId: string) => {
     if (selectedDevices.includes(deviceId)) {
       setSelectedDevices(selectedDevices.filter((id) => id !== deviceId));
@@ -22,8 +64,10 @@ export function DevicesPage({ selectedDevices, setSelectedDevices }: DevicesPage
     }
   };
 
+  const [devicesTab, setDevicesTab] = useState("device");
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 pb-8">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 pb-8 ">
       {/* Header */}
       <div className="bg-gradient-to-r from-green-600 to-green-700 text-white px-6 pt-8 pb-8 rounded-b-3xl shadow-lg">
         <div className="flex items-center gap-3 mb-2">
@@ -38,13 +82,25 @@ export function DevicesPage({ selectedDevices, setSelectedDevices }: DevicesPage
 
       <div className="px-4 -mt-4">
         <Tabs defaultValue="selection" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-4">
-            <TabsTrigger value="selection">Device Selection</TabsTrigger>
-            <TabsTrigger value="breakdown">Usage Breakdown</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 mb-4 bg-white border-slate-200 shadow-md">
+            <TabsTrigger value="selection" onClick={() => setDevicesTab("device")}
+            className={`flex-1 ${
+                  devicesTab === 'device' 
+                    ? 'bg-green-600 hover:bg-green-700 text-white border-green-600' 
+                    : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'
+                }`}            
+            >Device Selection</TabsTrigger>
+            <TabsTrigger value="breakdown"  onClick={() => setDevicesTab("usage")}
+                        className={`flex-1 ${
+                  devicesTab === 'usage' 
+                    ? 'bg-green-600 hover:bg-green-700 text-white border-green-600' 
+                    : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'
+                }`}       
+                >Usage Breakdown</TabsTrigger>
           </TabsList>
 
           <TabsContent value="selection">
-            <Card className="shadow-md">
+            <Card className="bg-white border-slate-200  shadow-md">
               <CardHeader>
                 <CardTitle>Household Devices</CardTitle>
                 <CardDescription>
@@ -55,6 +111,7 @@ export function DevicesPage({ selectedDevices, setSelectedDevices }: DevicesPage
                 <div className="grid grid-cols-4 gap-3">
                   {availableDevices.map((device) => {
                     const isSelected = selectedDevices.includes(device.id);
+                    const IconComponent = iconMap[device.icon] || Zap;
                     
                     return (
                       <button
@@ -64,36 +121,51 @@ export function DevicesPage({ selectedDevices, setSelectedDevices }: DevicesPage
                           aspect-square rounded-xl border-3 overflow-hidden flex flex-col
                           transition-all duration-200 cursor-pointer
                           ${isSelected 
-                            ? 'border-green-500 shadow-lg shadow-green-500/50 scale-105' 
-                            : 'border-slate-300 hover:border-slate-400'
+                            ? 'shadow-lg scale-105' 
+                            : 'hover:border-slate-400'
                           }
                         `}
-                        style={{ borderWidth: '3px' }}
+                        style={{ 
+                          borderWidth: '3px',
+                          borderColor: isSelected ? '#00A651' : '#e2e8f0'
+                        }}
                       >
                         {/* Title at top */}
-                        <div className={`px-2 py-1.5 text-center transition-colors ${
-                          isSelected ? 'bg-green-500 text-white' : 'bg-slate-100 text-slate-700'
-                        }`}>
+                        <div 
+                          className="px-2 py-1.5 text-center transition-colors"
+                          style={{
+                            backgroundColor: isSelected ? '#00A651' : '#f1f5f9',
+                            color: isSelected ? '#ffffff' : '#334155'
+                          }}
+                        >
                           <div className="text-xs truncate">
                             {device.name}
                           </div>
                         </div>
                         
-                        {/* Image in center */}
-                        <div className="flex-1 relative overflow-hidden bg-white">
-                          <ImageWithFallback 
-                            src={device.imageUrl} 
-                            alt={device.name}
-                            className={`w-full h-full object-cover transition-all ${
-                              isSelected ? '' : 'grayscale opacity-60'
-                            }`}
+                        {/* Sketched Icon in center - 60% of card */}
+                        <div className="flex-1 flex items-center justify-center bg-white p-2">
+                          <IconComponent 
+                            className="transition-all"
+                            fill="none"
+                            style={{
+                              width: '60%',
+                              height: '60%',
+                              strokeWidth: 1.5,
+                              stroke: isSelected ? '#00A651' : '#FF6B35',
+                              filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1))'
+                            }}
                           />
                         </div>
                         
                         {/* kW at bottom */}
-                        <div className={`px-2 py-1 text-center transition-colors ${
-                          isSelected ? 'bg-green-500 text-white' : 'bg-slate-100 text-slate-600'
-                        }`}>
+                        <div 
+                          className="px-2 py-1 text-center transition-colors"
+                          style={{
+                            backgroundColor: isSelected ? '#00A651' : '#f1f5f9',
+                            color: isSelected ? '#ffffff' : '#475569'
+                          }}
+                        >
                           <div className="text-[10px]">
                             {(device.avgPower / 1000).toFixed(1)} kW
                           </div>
@@ -118,7 +190,11 @@ export function DevicesPage({ selectedDevices, setSelectedDevices }: DevicesPage
           </TabsContent>
 
           <TabsContent value="breakdown">
-            <DeviceBreakdown selectedDevices={selectedDevices} />
+            <DeviceBreakdown 
+              selectedDevices={selectedDevices}
+              displayMode={displayMode}
+              setDisplayMode={setDisplayMode}
+            />
           </TabsContent>
         </Tabs>
       </div>

@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
-import { Zap, TrendingDown, TrendingUp, Lightbulb, Calendar, BadgePoundSterling, Menu } from 'lucide-react';
+import { Checkbox } from './ui/checkbox';
+import { Zap, TrendingDown, TrendingUp, Lightbulb, Calendar, BadgePoundSterling } from 'lucide-react';
 import { EnergyChart } from './EnergyChart';
 import { AIInsightCard } from './AIInsightCard';
 import type { DisplayMode } from '../types';
@@ -20,7 +21,8 @@ interface InsightData {
   trend: 'up' | 'down' | 'neutral';
 }
 
-const insights: Record<TimeFilter, InsightData[]> = {
+// Fallback insights in case API fails
+const fallbackInsights: Record<TimeFilter, InsightData[]> = {
   day: [
     {
       icon: TrendingDown,
@@ -89,9 +91,62 @@ export function UsagePage({ displayMode, setDisplayMode, selectedDevices }: Usag
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string | null>(null);
   const [clickedData, setClickedData] = useState<any>(null);
+  const [showTariff, setShowTariff] = useState(false);
+  const [insights, setInsights] = useState<InsightData[]>([]);
+  const [insightsLoading, setInsightsLoading] = useState(true);
+  const [insightsError, setInsightsError] = useState<string | null>(null);
 
   // Energy cost calculation (£0.24 per kWh - UK average)
   const costPerKwh = 0.24;
+
+  // Map icon names to components
+  const getIconComponent = (iconName: string) => {
+    const iconMap: Record<string, any> = {
+      'TrendingDown': TrendingDown,
+      'TrendingUp': TrendingUp,
+      'Lightbulb': Lightbulb,
+      'Calendar': Calendar,
+    };
+    return iconMap[iconName] || Lightbulb;
+  };
+
+  // Fetch AI insights from API
+  // Expected API response format:
+  // GET /aiinsights?period=day: [{ title: 'Peak Usage', description: '...', trend: 'up', iconName: 'TrendingUp' }, ...]
+  useEffect(() => {
+    const fetchInsights = async () => {
+      setInsightsLoading(true);
+      setInsightsError(null);
+      
+      try {
+        const response = await fetch(`/api/proxy/aiinsights?period=${selectedFilter}`);
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch insights: ${response.statusText}`);
+        }
+        
+        const apiInsights = await response.json();
+        
+        // Transform API data to match our interface
+        const transformedInsights = apiInsights.map((insight: any) => ({
+          ...insight,
+          icon: getIconComponent(insight.iconName || 'Lightbulb'),
+        }));
+        
+        setInsights(transformedInsights);
+      } catch (err) {
+        console.error(`Error fetching insights for ${selectedFilter}:`, err);
+        setInsightsError(err instanceof Error ? err.message : 'Failed to fetch insights');
+        
+        // Use fallback data
+        setInsights(fallbackInsights[selectedFilter]);
+      } finally {
+        setInsightsLoading(false);
+      }
+    };
+
+    fetchInsights();
+  }, [selectedFilter]);
   
   const getDisplayValue = (kwh: number) => {
     if (displayMode === 'kwh') {
@@ -139,27 +194,39 @@ export function UsagePage({ displayMode, setDisplayMode, selectedDevices }: Usag
 
       <div className="px-4 -mt-4">
         {/* Filter Buttons */}
-        <Card className="mb-4 shadow-md">
+        <Card className="bg-white border-slate-200 mb-4 shadow-md">
           <CardContent className="p-3">
             <div className="flex gap-2">
               <Button
                 variant={selectedFilter === 'day' ? 'default' : 'outline'}
                 onClick={() => setSelectedFilter('day')}
-                className="flex-1"
+                className={`flex-1 ${
+                  selectedFilter === 'day' 
+                    ? 'bg-green-600 hover:bg-green-700 text-white border-green-600' 
+                    : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'
+                }`}
               >
                 Day
               </Button>
               <Button
                 variant={selectedFilter === 'week' ? 'default' : 'outline'}
                 onClick={() => setSelectedFilter('week')}
-                className="flex-1"
+                className={`flex-1 ${
+                  selectedFilter === 'week' 
+                    ? 'bg-green-600 hover:bg-green-700 text-white border-green-600' 
+                    : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'
+                }`}
               >
                 Week
               </Button>
               <Button
                 variant={selectedFilter === 'month' ? 'default' : 'outline'}
                 onClick={() => setSelectedFilter('month')}
-                className="flex-1"
+                className={`flex-1 ${
+                  selectedFilter === 'month' 
+                    ? 'bg-green-600 hover:bg-green-700 text-white border-green-600' 
+                    : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'
+                }`}
               >
                 Month
               </Button>
@@ -167,30 +234,64 @@ export function UsagePage({ displayMode, setDisplayMode, selectedDevices }: Usag
           </CardContent>
         </Card>
 
+        {/* Display Mode Toggle */}
+        <Card className="bg-white border-slate-200 mb-4 shadow-md">
+          <CardContent className="p-3">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-sm text-slate-600 mr-1">Display:</span>
+              <Button
+                variant={displayMode === 'kwh' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setDisplayMode('kwh')}
+                className={`flex-1 gap-1.5 ${
+                  displayMode === 'kwh' 
+                    ? 'bg-green-600 hover:bg-green-700 text-white border-green-600' 
+                    : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'
+                }`}
+              >
+                <Zap className="w-3.5 h-3.5" />
+                kWh
+              </Button>
+              <Button
+                variant={displayMode === 'cost' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setDisplayMode('cost')}
+                className={`flex-1 gap-1.5 ${
+                  displayMode === 'cost' 
+                    ? 'bg-green-600 hover:bg-green-700 text-white border-green-600' 
+                    : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'
+                }`}
+              >
+                <BadgePoundSterling className="w-3.5 h-3.5" />
+                Cost (£)
+              </Button>
+            </div>
+            <div className="flex items-center gap-2 pt-2 border-t border-slate-200">
+              <Checkbox
+                id="show-tariff"
+                checked={showTariff}
+                onCheckedChange={(checked) => setShowTariff(checked as boolean)}
+              />
+              <label
+                htmlFor="show-tariff"
+                className="text-sm text-slate-700 cursor-pointer select-none"
+              >
+                Show tariff rates on graph
+              </label>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Energy Chart */}
-        <Card className="mb-4 shadow-md">
+        <Card className="bg-white border-slate-200 mb-4 shadow-md">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center justify-between">
               <span>Consumption</span>
-              <div className="flex items-center gap-2">
-                <span className="text-green-600">
-                  {selectedFilter === 'day' && getDisplayValue(24.8)}
-                  {selectedFilter === 'week' && getDisplayValue(186.4)}
-                  {selectedFilter === 'month' && getDisplayValue(742.6)}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setDisplayMode(displayMode === 'kwh' ? 'cost' : 'kwh')}
-                  className="h-8 w-8 p-0 hover:bg-green-50"
-                >
-                  {displayMode === 'kwh' ? (
-                    <BadgePoundSterling className="w-4 h-4 text-green-600" />
-                  ) : (
-                    <Zap className="w-4 h-4 text-green-600" />
-                  )}
-                </Button>
-              </div>
+              <span className="text-green-600">
+                {selectedFilter === 'day' && getDisplayValue(24.8)}
+                {selectedFilter === 'week' && getDisplayValue(186.4)}
+                {selectedFilter === 'month' && getDisplayValue(742.6)}
+              </span>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -199,6 +300,7 @@ export function UsagePage({ displayMode, setDisplayMode, selectedDevices }: Usag
               displayMode={displayMode}
               selectedDevices={selectedDevices}
               onPeakClick={handlePeakClick}
+              showTariff={showTariff}
             />
           </CardContent>
         </Card>
@@ -210,9 +312,19 @@ export function UsagePage({ displayMode, setDisplayMode, selectedDevices }: Usag
             <h2 className="text-slate-700">AI Insights</h2>
           </div>
           
-          {insights[selectedFilter].map((insight, index) => (
-            <AIInsightCard key={index} {...insight} />
-          ))}
+          {insightsLoading ? (
+            <div className="text-center py-4 text-slate-500">
+              Loading insights...
+            </div>
+          ) : insightsError ? (
+            <div className="text-center py-4 text-red-500 text-sm">
+              {insightsError}
+            </div>
+          ) : (
+            insights.map((insight, index) => (
+              <AIInsightCard key={index} {...insight} />
+            ))
+          )}
         </div>
       </div>
 

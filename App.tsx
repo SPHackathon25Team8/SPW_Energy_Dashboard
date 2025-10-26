@@ -3,19 +3,9 @@ import { SidebarProvider } from './components/ui/sidebar';
 import { AppSidebar } from './components/AppSidebar';
 import { UsagePage } from './components/UsagePage';
 import { DevicesPage } from './components/DevicesPage';
+import type { Page, DisplayMode } from './types';
 
-export type Page = 'usage' | 'devices';
-export type DisplayMode = 'kwh' | 'cost';
-
-export interface Device {
-  id: string;
-  name: string;
-  icon: string;
-  avgPower: number; // watts
-  imageUrl: string;
-}
-
-export const availableDevices: Device[] = [
+const availableDevices = [
   { id: 'washing-machine', name: 'Washing Machine', icon: 'washing-machine', avgPower: 2000, imageUrl: 'https://images.unsplash.com/photo-1754732693535-7ffb5e1a51d6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx3YXNoaW5nJTIwbWFjaGluZSUyMGFwcGxpYW5jZXxlbnwxfHx8fDE3NjEzMzMzNDJ8MA&ixlib=rb-4.1.0&q=80&w=1080' },
   { id: 'ev-car', name: 'EV Car Charger', icon: 'car', avgPower: 7000, imageUrl: 'https://images.unsplash.com/photo-1593941707874-ef25b8b4a92b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxlbGVjdHJpYyUyMGNhciUyMGNoYXJnaW5nfGVufDF8fHx8MTc2MTMyMjUzNnww&ixlib=rb-4.1.0&q=80&w=1080' },
   { id: 'dishwasher', name: 'Dishwasher', icon: 'dishwasher', avgPower: 1800, imageUrl: 'https://images.unsplash.com/photo-1758631130778-42d518bf13aa?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxkaXNod2FzaGVyJTIwYXBwbGlhbmNlfGVufDF8fHx8MTc2MTM4MjExOHww&ixlib=rb-4.1.0&q=80&w=1080' },
@@ -47,7 +37,7 @@ export default function App() {
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full">
+      <div className="bg-white flex min-h-screen w-full">
         <AppSidebar currentPage={currentPage} onPageChange={setCurrentPage} />
         <main className="flex-1">
           {currentPage === 'usage' && (
@@ -61,6 +51,8 @@ export default function App() {
             <DevicesPage
               selectedDevices={selectedDevices}
               setSelectedDevices={setSelectedDevices}
+              displayMode={displayMode}
+              setDisplayMode={setDisplayMode}
             />
           )}
         </main>

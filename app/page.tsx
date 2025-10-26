@@ -34,6 +34,8 @@ export default function Home() {
             <DevicesPage
               selectedDevices={selectedDevices}
               setSelectedDevices={setSelectedDevices}
+              displayMode={displayMode}
+              setDisplayMode={setDisplayMode}
             />
           )}
         </main>

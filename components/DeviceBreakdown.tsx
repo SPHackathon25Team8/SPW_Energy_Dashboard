@@ -3,10 +3,11 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
-import { availableDevices } from '../types';
+import { Checkbox } from './ui/checkbox';
+import { availableDevices, DisplayMode } from '../types';
 import { DeviceBreakdownChart } from './DeviceBreakdownChart';
 import { DeviceInsightCard } from './DeviceInsightCard';
-import { Lightbulb } from 'lucide-react';
+import { Lightbulb, BadgePoundSterling, Zap } from 'lucide-react';
 
 type TimeFilter = 'day' | 'week' | 'month';
 
@@ -19,11 +20,17 @@ export interface DeviceUsageConfirmation {
 
 interface DeviceBreakdownProps {
   selectedDevices: string[];
+  displayMode: DisplayMode;
+  setDisplayMode: (mode: DisplayMode) => void;
 }
 
-export function DeviceBreakdown({ selectedDevices }: DeviceBreakdownProps) {
+export function DeviceBreakdown({ selectedDevices, displayMode, setDisplayMode }: DeviceBreakdownProps) {
   const [selectedFilter, setSelectedFilter] = useState<TimeFilter>('day');
   const [confirmations, setConfirmations] = useState<DeviceUsageConfirmation[]>([]);
+  const [showTariff, setShowTariff] = useState(false);
+
+  // Energy cost calculation (£0.24 per kWh - UK average)
+  const costPerKwh = 0.24;
 
   const updateConfirmation = (timeSlot: string, deviceId: string, inUse: boolean) => {
     setConfirmations((prev) => {
@@ -57,27 +64,36 @@ export function DeviceBreakdown({ selectedDevices }: DeviceBreakdownProps) {
   return (
     <div className="space-y-4">
       {/* Filter Buttons */}
-      <Card className="shadow-md">
+      <Card className="bg-white border-slate-200 shadow-md">
         <CardContent className="p-3">
           <div className="flex gap-2">
             <Button
               variant={selectedFilter === 'day' ? 'default' : 'outline'}
               onClick={() => setSelectedFilter('day')}
-              className="flex-1"
+              className={`flex-1 ${selectedFilter === 'day'
+                  ? 'bg-green-600 hover:bg-green-700 text-white border-green-600'
+                  : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'
+                }`}
             >
               Day
             </Button>
             <Button
               variant={selectedFilter === 'week' ? 'default' : 'outline'}
               onClick={() => setSelectedFilter('week')}
-              className="flex-1"
+              className={`flex-1 ${selectedFilter === 'week'
+                  ? 'bg-green-600 hover:bg-green-700 text-white border-green-600'
+                  : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'
+                }`}
             >
               Week
             </Button>
             <Button
               variant={selectedFilter === 'month' ? 'default' : 'outline'}
               onClick={() => setSelectedFilter('month')}
-              className="flex-1"
+              className={`flex-1 ${selectedFilter === 'month'
+                  ? 'bg-green-600 hover:bg-green-700 text-white border-green-600'
+                  : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'
+                }`}
             >
               Month
             </Button>
@@ -85,8 +101,54 @@ export function DeviceBreakdown({ selectedDevices }: DeviceBreakdownProps) {
         </CardContent>
       </Card>
 
+      {/* Display Mode Toggle */}
+      <Card className="bg-white border-slate-200  shadow-md mb-4">
+        <CardContent className="p-3">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-sm text-slate-600 mr-1">Display:</span>
+            <Button
+              variant={displayMode === 'kwh' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setDisplayMode('kwh')}
+              className={`flex-1 gap-1.5 ${displayMode === 'kwh'
+                  ? 'bg-green-600 hover:bg-green-700 text-white border-green-600'
+                  : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'
+                }`}
+            >
+              <Zap className="w-3.5 h-3.5" />
+              kWh
+            </Button>
+            <Button
+              variant={displayMode === 'cost' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setDisplayMode('cost')}
+              className={`flex-1 gap-1.5 ${displayMode === 'cost'
+                  ? 'bg-green-600 hover:bg-green-700 text-white border-green-600'
+                  : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'
+                }`}
+            >
+              <BadgePoundSterling className="w-3.5 h-3.5" />
+              Cost (£)
+            </Button>
+          </div>
+          <div className="flex items-center gap-2 pt-2 border-t border-slate-200">
+            <Checkbox
+              id="show-tariff-device"
+              checked={showTariff}
+              onCheckedChange={(checked) => setShowTariff(checked as boolean)}
+            />
+            <label
+              htmlFor="show-tariff-device"
+              className="text-sm text-slate-700 cursor-pointer select-none"
+            >
+              Show tariff rates on graph
+            </label>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Device Breakdown Chart */}
-      <Card className="shadow-md">
+      <Card className="bg-white border-slate-200 shadow-md">
         <CardHeader>
           <CardTitle>Device Energy Breakdown</CardTitle>
         </CardHeader>
@@ -96,6 +158,9 @@ export function DeviceBreakdown({ selectedDevices }: DeviceBreakdownProps) {
             selectedDevices={selectedDevices}
             confirmations={confirmations}
             onUpdateConfirmation={updateConfirmation}
+            displayMode={displayMode}
+            costPerKwh={costPerKwh}
+            showTariff={showTariff}
           />
         </CardContent>
       </Card>

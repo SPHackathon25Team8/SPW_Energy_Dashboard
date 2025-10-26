@@ -11,7 +11,7 @@ import {
 } from './ui/sidebar';
 import { BarChart3, Settings, Zap } from 'lucide-react';
 import type { Page } from '../types';
-import logo from 'figma:asset/cb8941f210768bb6a30608aa000bfb646ef17fb0.png';
+import logo from '../assets/ScottishPower_Logo_2023.png';
 
 interface AppSidebarProps {
   currentPage: Page;
@@ -20,10 +20,10 @@ interface AppSidebarProps {
 
 export function AppSidebar({ currentPage, onPageChange }: AppSidebarProps) {
   return (
-    <Sidebar>
+    <Sidebar className='border-slate-200'>
       <SidebarHeader className="border-b p-4">
         <div className="flex items-center justify-center">
-          <img src={logo} alt="Scottish Power" className="h-12" />
+          <img src="{logo}" alt="Scottish Power" className="h-12" />
         </div>
       </SidebarHeader>
       <SidebarContent>

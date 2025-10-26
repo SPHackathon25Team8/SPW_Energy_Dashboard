@@ -69,7 +69,7 @@ export function DeviceConfirmDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="bg-white sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Confirm Device Usage</DialogTitle>
           <DialogDescription>

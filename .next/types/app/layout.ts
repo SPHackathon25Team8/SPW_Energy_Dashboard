@@ -1,4 +1,4 @@
-// File: C:\Users\LAPTOP\Desktop\spw_energy_dashboard\app\layout.tsx
+// File: C:\Users\LAPTOP\Documents\GitHub\New\app\layout.tsx
 import * as entry from '../../../app/layout.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 
