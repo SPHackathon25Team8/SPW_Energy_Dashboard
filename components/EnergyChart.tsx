@@ -115,8 +115,9 @@ export function EnergyChart({ filter, displayMode, selectedDevices, onPeakClick,
       setError(null);
 
       try {
-        const endpoint = `/api/proxy/${filter}`;
+        const endpoint = `/api/proxy/${filter}?devices=${selectedDevices}`;
         const response = await fetch(endpoint);
+        console.log("calling this ..."+selectedDevices);
 
         if (!response.ok) {
           throw new Error(`Failed to fetch ${filter} data: ${response.statusText}`);

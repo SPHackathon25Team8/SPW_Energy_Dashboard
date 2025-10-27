@@ -2,6 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { Button } from './ui/button';
 import { 
   Zap, 
   WashingMachine, 
@@ -18,12 +19,17 @@ import {
   Microwave,
   Fan,
   Lightbulb,
-  Smartphone
+  Smartphone,
+  Save,
+  RotateCcw,
+  Download,
+  Upload
 } from 'lucide-react';
 import { availableDevices, DisplayMode } from '../types';
 import { SidebarTrigger } from './ui/sidebar';
 import { DeviceBreakdown } from './DeviceBreakdown';
 import { useState } from 'react';
+import { exportDeviceConfiguration, clearAllData } from '../utils/deviceStorage';
 
 interface DevicesPageProps {
   selectedDevices: string[];
@@ -56,6 +62,9 @@ const iconMap: Record<string, any> = {
 
 
 export function DevicesPage({ selectedDevices, setSelectedDevices, displayMode, setDisplayMode }: DevicesPageProps) {
+  const [devicesTab, setDevicesTab] = useState("device");
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+
   const toggleDevice = (deviceId: string) => {
     if (selectedDevices.includes(deviceId)) {
       setSelectedDevices(selectedDevices.filter((id) => id !== deviceId));
@@ -64,7 +73,59 @@ export function DevicesPage({ selectedDevices, setSelectedDevices, displayMode, 
     }
   };
 
-  const [devicesTab, setDevicesTab] = useState("device");
+  const saveConfiguration = () => {
+    setSaveStatus('saving');
+    // The devices are already being saved to localStorage in the parent component
+    // This is just for user feedback
+    setTimeout(() => {
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 2000);
+    }, 500);
+  };
+
+  const resetToDefaults = () => {
+    const defaultDevices = ['washing-machine', 'ev-car', 'dishwasher', 'fridge', 'tv'];
+    setSelectedDevices(defaultDevices);
+  };
+
+  const handleClearAllData = () => {
+    if (confirm('Are you sure you want to clear all stored data? This cannot be undone.')) {
+      clearAllData();
+      resetToDefaults();
+      setDisplayMode('kwh');
+    }
+  };
+
+  const exportConfiguration = () => {
+    exportDeviceConfiguration();
+  };
+
+  const importConfiguration = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const config = JSON.parse(e.target?.result as string);
+        if (config.selectedDevices && Array.isArray(config.selectedDevices)) {
+          setSelectedDevices(config.selectedDevices);
+        }
+        if (config.displayMode && (config.displayMode === 'kwh' || config.displayMode === 'cost')) {
+          setDisplayMode(config.displayMode);
+        }
+        setSaveStatus('saved');
+        setTimeout(() => setSaveStatus('idle'), 2000);
+      } catch (error) {
+        console.error('Failed to import configuration:', error);
+        alert('Failed to import configuration. Please check the file format.');
+      }
+    };
+    reader.readAsText(file);
+    
+    // Reset the input
+    event.target.value = '';
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 pb-8 ">
@@ -102,10 +163,67 @@ export function DevicesPage({ selectedDevices, setSelectedDevices, displayMode, 
           <TabsContent value="selection">
             <Card className="bg-white border-slate-200  shadow-md">
               <CardHeader>
-                <CardTitle>Household Devices</CardTitle>
-                <CardDescription>
-                  Select the devices you have. Our AI will predict when they're in use based on energy patterns.
-                </CardDescription>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <CardTitle>Household Devices</CardTitle>
+                    <CardDescription>
+                      Select the devices you have. Our AI will predict when they're in use based on energy patterns.
+                    </CardDescription>
+                  </div>
+                  <div className="flex gap-2 hidden">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={exportConfiguration}
+                      className="text-slate-600 hover:text-slate-800"
+                    >
+                      <Download className="w-4 h-4 mr-1" />
+                      Export
+                    </Button>
+                    <label className="cursor-pointer">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        asChild
+                        className="text-slate-600 hover:text-slate-800"
+                      >
+                        <span>
+                          <Upload className="w-4 h-4 mr-1" />
+                          Import
+                        </span>
+                      </Button>
+                      <input
+                        type="file"
+                        accept=".json"
+                        onChange={importConfiguration}
+                        className="hidden"
+                      />
+                    </label>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={resetToDefaults}
+                      className="text-slate-600 hover:text-slate-800"
+                    >
+                      <RotateCcw className="w-4 h-4 mr-1" />
+                      Reset
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={saveConfiguration}
+                      disabled={saveStatus === 'saving'}
+                      className={`${
+                        saveStatus === 'saved' 
+                          ? 'bg-green-100 text-green-800 border-green-300' 
+                          : 'text-slate-600 hover:text-slate-800'
+                      }`}
+                    >
+                      <Save className={`w-4 h-4 mr-1 ${saveStatus === 'saving' ? 'animate-spin' : ''}`} />
+                      {saveStatus === 'saved' ? 'Saved!' : 'Save'}
+                    </Button>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-4 gap-3">
@@ -180,10 +298,13 @@ export function DevicesPage({ selectedDevices, setSelectedDevices, displayMode, 
             {selectedDevices.length > 0 && (
               <Card className="mt-4 shadow-md bg-green-50 border-green-200">
                 <CardContent className="p-4">
-                  <p className="text-sm text-green-800">
+                  <p className="text-sm text-green-800 mb-2">
                     ✓ {selectedDevices.length} device{selectedDevices.length !== 1 ? 's' : ''} selected. 
                     View the Usage Breakdown tab to see individual device consumption.
                   </p>
+                  <div className="text-xs text-green-700">
+                    <strong>Selected devices:</strong> {selectedDevices.join(', ')}
+                  </div>
                 </CardContent>
               </Card>
             )}
